@@ -47,4 +47,3 @@ class Critic(nn.Module):
         
         return self.output(x)
 
-class 
