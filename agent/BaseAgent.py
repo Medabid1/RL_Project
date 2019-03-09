@@ -6,13 +6,14 @@ import sys
 
 
 class BaseAgent:
+    
     def __init__(self, config):
         self.config = config
-
-    def save(self, filename):
-        torch.save(self.network.state_dict(), filename)
+        
+    def save(self, filename, network):
+        torch.save(network.state_dict(), filename)
     
-    def load(self, filename):
+    def load(self, network, filename):
         state_dict = torch.load(filename, map_location={lambda storage , loc : storage})
-        self.network.load_state_dict(state_dict)
+        network.load_state_dict(state_dict)
     

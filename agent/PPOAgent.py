@@ -1,7 +1,7 @@
 from BaseAgent import *
 
 
-class PPO(BaseAgent):
+class PPOAgent(BaseAgent):
     def __init__(self, config, ):
-        super(BaseAgent).__init__()
+        super(PPOAgent).__init__()
 
