@@ -1,7 +1,7 @@
 import torch 
 import torch.optim as optim
 import numpy as np
-from BaseAgent import BaseAgent
+from .BaseAgent import *
 from network.Networks import Actor, Critic
 
 class A2CAgent(BaseAgent):

@@ -1,5 +1,6 @@
-from BaseAgent import *
+import sys 
 
+from .BaseAgent import *
 
 class PPOAgent(BaseAgent):
     def __init__(self, config, ):
