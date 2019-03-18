@@ -18,12 +18,12 @@ class Actor(nn.Module):
         self.relu = nn.ReLU()
     
     def forward(self, obs):
-        x = torch.from_numpy(obs)
+        x = torch.from_numpy(obs).float()
         for linear in self.hidden_layers : 
             x = self.relu(linear(x))
         
         mu = self.mu(x)
-        sigma = F.softplus(self.sigma)
+        sigma = F.softplus(self.sigma(x))
         self.policy = torch.distributions.Normal(mu, sigma)
         sample = torch.clamp(self.policy.sample_n(1), -1, 1)
 
@@ -41,7 +41,7 @@ class Critic(nn.Module):
         self.relu = nn.ReLU()
 
     def forward(self, obs):
-        x = torch.form_numpy(obs)
+        x = torch.from_numpy(obs).float()
         for linear in self.hidden_layers : 
             x = self.relu(linear(x))
         

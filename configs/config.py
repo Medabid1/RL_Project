@@ -8,13 +8,14 @@ class Config:
         self.discount = 0.99
         self.actor_layers = None
         self.critic_layers = None 
-        self.rollout_lenght = 1000
+        self.rollout_length = 1000
         self.gradient_clip = None 
         self.use_gae = False 
         self.num_workers = None
         self.tau = 0.001
         self.batch_size = 256
         self.buffer_size = 100000
-    
+        self.optimization_rollouts = None
+        
     def add_argument(self, *args, **kwargs):
         self.parser.add_argument(*args, **kwargs)

@@ -17,3 +17,7 @@ class BaseAgent:
         state_dict = torch.load(filename, map_location={lambda storage , loc : storage})
         network.load_state_dict(state_dict)
     
+    def init_weights(self,m):
+        if isinstance(m,torch.nn.Linear):
+            torch.nn.init.kaiming_uniform_(m.weight)
+            torch.nn.init.constant_(m.bias, 0.1)

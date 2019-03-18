@@ -32,7 +32,7 @@ class A2CAgent(BaseAgent):
             value_loss = 0.5 * td_error.pow(2).mean()
             policy_loss = -(td_error * self.actor.policy.log_prob(action)).mean()
             self.optimizer.zero_grad()
-            loss = policy_loss + value_loss
+            loss = policy_loss + value_loss 
             loss.backward()
             self.optimizer.step()
     
