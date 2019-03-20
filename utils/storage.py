@@ -3,15 +3,35 @@ import torch
 
 
 class Storage:
-    
-    def __init__(self, size):
-        pass
-    
+    def __init__(self, size, keys=None):
+        if keys is None:
+            keys = []
+        keys = keys + ['states', 'actions', 'rewards', 'mask',
+                       'values', 'q', 'pi', 'log_pi', 'entropy',
+                       'advantages', 'returns', 'q_a', 'log_prob',
+                       'mean']
+        self.keys = keys
+        self.size = size
+        self.reset()
+
+    def add(self, data):
+        for k, v in data.items():
+            assert k in self.keys
+            getattr(self, k).append(v)
+
+    def placeholder(self):
+        for k in self.keys:
+            v = getattr(self, k)
+            if len(v) == 0:
+                setattr(self, k, [None] * self.size)
+
     def reset(self):
-        pass
-    
-    def add(self):
-        pass
-    
-    def to(self, device):
-        pass
+        for key in self.keys:
+            setattr(self, key, [])
+
+    def cat(self, keys):
+        data = [getattr(self, k)[:self.size] for k in keys]
+        return map(lambda x: torch.cat(x, dim=0), data)
+
+
+
