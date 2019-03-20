@@ -32,13 +32,14 @@ def main():
             observations.append(obs)
             actions.append(action)
             next_obs, r, done, _ = env.step(action)
-            #print('reward',r)
+            #print('reward',r)  
 
             totalr += r
             steps += 1
             
             env.render()
             agent.step(obs, action, r, next_obs, done)
+            obs = np.array(next_obs)
             if steps % 100 == 0: print("%i/%i"%(steps, max_steps))
             if steps >= max_steps:
                  break
