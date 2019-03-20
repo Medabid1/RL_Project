@@ -9,10 +9,11 @@ def init_weights(m):
 
 def compute_gae(advantages, returns, storage, config):
     for i in reversed(range(config.rollout_length)):
-            returns = storage.returns[i] + (config.discount * storage.mask[i] * returns)
+            
+            returns = storage.rewards[i] + (config.discount * storage.mask[i] * returns)
 
             td_error = (storage.rewards[i] + (config.discount *
-                        storage.mask[i] * storage.value[i + 1]) - storage.value[i]) 
+                        storage.mask[i] * storage.values[i + 1]) - storage.values[i]) 
             advantages = td_error + (advantages * config.gae_tau
                                      * config.discount * storage.mask[i])
 
@@ -21,6 +22,7 @@ def compute_gae(advantages, returns, storage, config):
     
     states, actions, log_probs_old, returns, advantages = storage.cat(['states', 'actions', 
                                                         'log_prob', 'returns', 'advantages'])
+
     actions = actions.detach()
     log_probs_old = log_probs_old.detach()
     advantages = (advantages - advantages.mean()) / advantages.std()

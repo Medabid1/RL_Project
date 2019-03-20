@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F 
 import numpy as np 
-from ..utils.utils import init_weights
+from utils.utils import init_weights
 
 class ActorCritic(nn.Module):
     def __init__(self, num_inputs, action_size, hidden_size, std=0.0):
@@ -25,6 +25,10 @@ class ActorCritic(nn.Module):
         self.apply(init_weights)
         
     def forward(self, state, action=None):
+
+        if not isinstance(state, torch.Tensor) :
+            state = torch.from_numpy(state).float()
+
         value = self.critic(state)
         mu    = self.actor(state)
         std   = self.log_std
@@ -33,7 +37,7 @@ class ActorCritic(nn.Module):
             action = dist.sample()
         log_prob = dist.log_prob(action).sum(-1).unsqueeze(-1)
         entropy = dist.entropy().sum(-1).unsqueeze(-1)
-        return {'actions': action,
+        return {'actions': action.unsqueeze(0),
                 'log_prob': log_prob,
                 'entropy': entropy,
                 'mean': mu,
