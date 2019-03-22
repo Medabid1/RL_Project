@@ -31,10 +31,10 @@ class PPOAgent(BaseAgent):
             self.storage.add({'rewards': torch.from_numpy(np.asarray(rewards)).unsqueeze(-1).float(),
                               'mask': torch.from_numpy(np.asarray(1 - done)).unsqueeze(-1).float(),
                               'states': torch.from_numpy(state).float().unsqueeze(0)})
-            if done : 
-                state = np.array(env.reset())
-            else : 
-                state = np.array(next_state)
+            # if done : 
+            #     state = np.array(env.reset())
+            # else : 
+            state = np.array(next_state)
 
         print('cummulative return', cumm_return)
         print('avg return', cumm_return / self.config.rollout_length)
