@@ -2,7 +2,7 @@ import sys
 import torch
 
 from .BaseAgent import *
-from network.Networks import ActorCritic
+from network.Networks import ActorCriticContinous
 from utils.utils import compute_gae, random_sample
 from utils.storage import Storage
 
@@ -10,7 +10,7 @@ class PPOAgent(BaseAgent):
 
     def __init__(self, config, obs_size, act_size, env):
         BaseAgent.__init__(self, config)
-        self.network = ActorCritic(obs_size, act_size, config.hidden_layer)
+        self.network = ActorCriticContinous(obs_size, act_size, config.hidden_layer)
         self.config = config
         self.env = env
         self.optimizer = torch.optim.Adam(self.network.parameters(), 3e-4, eps=1e-5) 

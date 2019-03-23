@@ -1,22 +1,28 @@
+import numpy as np 
+import random 
+import copy
 
 class RandomProcess(object):
     def reset_states(self):
         pass
 
 class OrnsteinUhlenbeckProcess(RandomProcess):
-    def __init__(self, size, std, theta=.15, dt=1e-2, x0=None):
+    """ Ornstein-Uhlenbeck Process """
+    def __init__(self, size, seed, mu=0., theta=0.15, sigma=0.2):
+        """Initialize parameters and noise process."""
+        self.mu = mu * np.ones(size)
         self.theta = theta
-        self.mu = 0
-        self.std = std
-        self.dt = dt
-        self.x0 = x0
-        self.size = size
-        self.reset_states()
+        self.sigma = sigma
+        self.seed = random.seed(seed)
+        self.reset()
+
+    def reset(self):
+        """Reset the internal state (= noise) to mean (mu)."""
+        self.state = copy.copy(self.mu)
 
     def sample(self):
-        x = self.x_prev + self.theta * (self.mu - self.x_prev) * self.dt + self.std * np.sqrt(self.dt) * np.random.randn(self.size)
-        self.x_prev = x
-        return x
-
-    def reset_states(self):
-        self.x_prev = self.x0 if self.x0 is not None else np.zeros(self.size)
+        """Update internal state and return it as a noise sample."""
+        x = self.state
+        dx = self.theta * (self.mu - x) + self.sigma * np.array([random.random() for i in range(len(x))])
+        self.state = x + dx
+        return self.state

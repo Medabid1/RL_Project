@@ -4,18 +4,18 @@ import torch.nn.functional as F
 import numpy as np 
 from utils.utils import init_weights
 
-class ActorCritic(nn.Module):
-    def __init__(self, num_inputs, action_size, hidden_size, std=0.0):
-        super(ActorCritic, self).__init__()
+class ActorCriticContinous(nn.Module):
+    def __init__(self, state_size, action_size, hidden_size, std=0.0):
+        super(ActorCriticContinous, self).__init__()
         
         self.critic = nn.Sequential(
-            nn.Linear(num_inputs, hidden_size),
+            nn.Linear(state_size, hidden_size),
             nn.ReLU(),
             nn.Linear(hidden_size, 1)
         )
         
         self.actor = nn.Sequential(
-            nn.Linear(num_inputs, hidden_size),
+            nn.Linear(state_size, hidden_size),
             nn.ReLU(),
             nn.Linear(hidden_size, action_size),
             nn.Tanh()
@@ -43,3 +43,6 @@ class ActorCritic(nn.Module):
                 'mean': mu,
                 'values': value}
 
+class ActorCritic(nn.Module):
+    def __init__(self):
+        pass

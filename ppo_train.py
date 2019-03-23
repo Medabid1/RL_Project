@@ -20,7 +20,7 @@ def main():
     config.ppo_ratio_clip = 0.2
     config.entropy_weight = 0.01
 
-    env = gym.make('MountainCarContinuous-v0')
+    env = gym.make('Humanoid-v2')
     max_steps = env.spec.timestep_limit
     print(max_steps)
     obs_size = np.shape(env.observation_space)[0]
