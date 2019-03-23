@@ -22,5 +22,13 @@ class DDPGAgent(BaseAgent):
     def step(self):
         pass
 
-    def soft_update(self):
+    def sample(self):
         pass
+
+    def reset(self):
+        self.noise.reset()
+
+    def soft_update(self):
+        tau = self.config.tau_ddpg
+        for targetp, netp in zip(self.target_network.parameters(), self.network.parameters()):
+            self.target_network.data.copy_(tau * netp + (1 - tau) * targetp)
