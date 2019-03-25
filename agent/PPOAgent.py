@@ -1,7 +1,8 @@
 import sys 
 import torch
+import numpy as np
 
-from .BaseAgent import *
+from .BaseAgent import BaseAgent
 from network.Networks import ActorCriticContinous
 from utils.utils import compute_gae, random_sample
 from utils.storage import Storage

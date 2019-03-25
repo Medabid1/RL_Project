@@ -30,7 +30,7 @@ class ReplayBuffer():
         next_states = torch.Tensor(
                 np.vstack([e.next_state for e in experiences if e is not None])).float()
         dones = torch.Tensor(
-                np.vstack([e.done for e in experiences if e is not None]).astype(np.uint8)).float()
+                np.vstack([(1-e.done) for e in experiences if e is not None]).astype(np.uint8)).float()
 
         return (obss, actions, rewards, next_states, dones)
 

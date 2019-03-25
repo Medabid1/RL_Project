@@ -21,7 +21,8 @@ class Config:
         self.mini_batch_size = None
         self.ppo_clip = 0.2
         self.entropy_weight = None
-        self.tau_ddpg = 0.01
+        self.tau_ddpg = 0.001
+        self.add_noise = True 
         
     def add_argument(self, *args, **kwargs):
         self.parser.add_argument(*args, **kwargs)
