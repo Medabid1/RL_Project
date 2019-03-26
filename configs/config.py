@@ -10,19 +10,20 @@ class Config:
         self.critic_layers = None 
         self.rollout_length = 1000
         self.gradient_clip = None 
-        self.use_gae = True
+        self.use_gae = False
         self.gae_tau = 0.95
         self.num_workers = None
         self.tau = 0.001
         self.batch_size = 256
-        self.buffer_size = 100000
+        self.buffer_size = 1e6
         self.optimization_rollouts = None
-        self.hidden_layer = None
+        self.hidden_layers = [200,100]
         self.mini_batch_size = None
         self.ppo_clip = 0.2
         self.entropy_weight = None
         self.tau_ddpg = 0.001
         self.add_noise = True 
+        self.max_steps = 500
         
     def add_argument(self, *args, **kwargs):
         self.parser.add_argument(*args, **kwargs)
