@@ -1,33 +1,38 @@
-import torch 
+import torch
+import torch.nn as nn 
 import numpy as np
 from utils.noise import OrnsteinUhlenbeckProcess
-from network.Networks import *
 from .BaseAgent import BaseAgent
-from network.Networks import DDPGActorCritic
+from network.Networks import ActorCriticDeterministic
 from utils.memory import ReplayBuffer 
+from utils.utils import to_tensor, to_numpy
 
 class DDPGAgent(BaseAgent):
-    def __init__(self, config, state_size, action_size, hidden_size, env): 
-        super(DDPGAgent, self).__init__()
+    def __init__(self, config, state_size, action_size, env): 
+        BaseAgent.__init__(self, config)
         self.config = config
         self.network = ActorCriticDeterministic(state_size, action_size, config.hidden_layers)
         self.target_network = ActorCriticDeterministic(state_size, action_size, config.hidden_layers)
         self.target_network.load_state_dict(self.network.state_dict())
-        self.memory = ReplayBuffer(action_size, buffer_size=1e6, batch_size=config.batch_size)
+        self.memory = ReplayBuffer(action_size, buffer_size=int(config.buffer_size),
+                                   batch_size=config.batch_size)
         self.actor_optimizer = torch.optim.Adam(self.network.actor.parameters())
         self.critic_optimizer = torch.optim.Adam(self.network.critic.parameters())
-        self.noise = OrnsteinUhlenbeckProcess(state_size, seed=445684)
+        self.noise = OrnsteinUhlenbeckProcess(action_size, seed=445684)
         self.env = env
     
     def sample(self):
-        state = self.env.reset()
+        observation = self.env.reset()
+        state = observation['observation']
         self.reset_noise()
         i = 1
         while True :
+            self.env.render()
             action = self.network.forward_actor(state)
             if self.config.add_noise :
-                action = action + self.noise.sample()
-            next_state, reward, done, _ = self.env.step(action)
+                action = action #+ to_tensor(self.noise.sample())
+            next_observation, reward, done, _ = self.env.step(to_numpy(action))
+            next_state = next_observation['observation']
             self.memory.add(state, action, reward, next_state, done)
             i += 1
             if done :
@@ -47,7 +52,7 @@ class DDPGAgent(BaseAgent):
         value_criterion = nn.MSELoss()
         next_actions = self.target_network.forward_actor(next_states)
         target_value = self.target_network.forward_critic(next_states, next_actions)
-        expected_value = rewards + self.config.gamma * target_value * dones
+        expected_value = rewards + self.config.discount * target_value * dones
         value = self.network.forward_critic(states, actions)
         value_loss = value_criterion(expected_value, value)
         #====== Policy loss =======
@@ -71,4 +76,4 @@ class DDPGAgent(BaseAgent):
     def soft_update(self):
         tau = self.config.tau_ddpg
         for targetp, netp in zip(self.target_network.parameters(), self.network.parameters()):
-            self.target_network.data.copy_(tau * netp + (1 - tau) * targetp)
+            targetp.data.copy_(tau * netp + (1 - tau) * targetp)

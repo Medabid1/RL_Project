@@ -14,7 +14,7 @@ class Config:
         self.gae_tau = 0.95
         self.num_workers = None
         self.tau = 0.001
-        self.batch_size = 256
+        self.batch_size = 64
         self.buffer_size = 1e6
         self.optimization_rollouts = None
         self.hidden_layers = [200,100]
@@ -24,6 +24,6 @@ class Config:
         self.tau_ddpg = 0.001
         self.add_noise = True 
         self.max_steps = 500
-        
+    
     def add_argument(self, *args, **kwargs):
         self.parser.add_argument(*args, **kwargs)

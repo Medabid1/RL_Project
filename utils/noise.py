@@ -8,9 +8,9 @@ class RandomProcess(object):
 
 class OrnsteinUhlenbeckProcess(RandomProcess):
     """ Ornstein-Uhlenbeck Process """
-    def __init__(self, size, seed, mu=0., theta=0.15, sigma=0.2):
+    def __init__(self, action_space, seed, mu=0., theta=0.15, sigma=0.2):
         """Initialize parameters and noise process."""
-        self.mu = mu * np.ones(size)
+        self.mu = mu * np.ones(action_space)
         self.theta = theta
         self.sigma = sigma
         self.seed = random.seed(seed)

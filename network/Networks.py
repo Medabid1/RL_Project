@@ -68,8 +68,15 @@ class ActorCriticDeterministic(nn.Module):
         self.apply(init_weights)
 
     def forward_critic(self, state, action):
+        if not isinstance(state, torch.Tensor) :
+            state = torch.from_numpy(state).float()
+        if not isinstance(state, torch.Tensor) :
+            action = torch.from_numpy(action).float()
+            
         x = torch.cat((state, action), 1)
         return self.critic(x)
     
     def forward_actor(self, state):
+        if not isinstance(state, torch.Tensor) :
+            state = torch.from_numpy(state).float()
         return self.actor(state)

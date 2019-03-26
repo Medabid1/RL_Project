@@ -17,8 +17,8 @@ class ReplayBuffer():
                                     ['obs', 'action', 'reward', 'next_state', 'done'])
 
     def add(self, obs, action, reward, next_state, done):
-
-        e = self.experience(obs, action, reward, next_state, done)
+        
+        e = self.experience(obs, action.detach().numpy(), reward, next_state, done)
         self.memory.append(e)
 
     def sample(self):

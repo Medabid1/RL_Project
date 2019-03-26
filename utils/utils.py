@@ -1,11 +1,23 @@
 import numpy as np
 import torch.nn as nn
+import torch 
 
 def init_weights(m):
     if isinstance(m, nn.Linear):
         nn.init.kaiming_uniform_(m.weight)
         nn.init.constant_(m.bias, 0.1)
 
+def to_tensor(x):
+        if isinstance(x, torch.Tensor):
+                return x.float()
+        else: 
+                return torch.from_numpy(x).float()
+
+def to_numpy(x):
+        if isinstance(x, np.ndarray):
+                return x
+        else :
+                return x.detach().numpy()
 
 def compute_gae(advantages, returns, storage, config):
     for i in reversed(range(config.rollout_length)):
@@ -39,3 +51,6 @@ def random_sample(indices, batch_size):
     r = len(indices) % batch_size
     if r:
         yield indices[-r:]
+
+
+
