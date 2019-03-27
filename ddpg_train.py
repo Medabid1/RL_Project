@@ -14,13 +14,15 @@ def main():
     config.batch_size = 64
     config.buffer_size = 1e6
     config.max_steps = env.spec.timestep_limit
+    config.use_her = True
+    
     observation = env.reset()
-    
+    print(observation)
     obs_size = np.shape(observation['observation'])[0]
-    
     action_size = np.shape(env.action_space)[0]
+    goal_size = np.shape(observation['desired_goal'])[0]
     print(obs_size, action_size)
-    agent = DDPGAgent(config=config, state_size=obs_size, action_size=action_size, env=env)
+    agent = DDPGAgent(config, obs_size, action_size, goal_size, env)
     
     for i in range(10000):
         print('iter', i)

@@ -8,11 +8,13 @@ from utils.memory import ReplayBuffer
 from utils.utils import to_tensor, to_numpy
 
 class DDPGAgent(BaseAgent):
-    def __init__(self, config, state_size, action_size, env): 
+    def __init__(self, config, state_size, action_size, goal_size, env): 
         BaseAgent.__init__(self, config)
         self.config = config
-        self.network = ActorCriticDeterministic(state_size, action_size, config.hidden_layers)
-        self.target_network = ActorCriticDeterministic(state_size, action_size, config.hidden_layers)
+        self.network = ActorCriticDeterministic(state_size, action_size, goal_size,
+                                                config.hidden_layers, use_her=config.use_her)
+        self.target_network = ActorCriticDeterministic(state_size, action_size, goal_size,
+                                                    config.hidden_layers, use_her=config.use_her)
         self.target_network.load_state_dict(self.network.state_dict())
         self.memory = ReplayBuffer(action_size, buffer_size=int(config.buffer_size),
                                    batch_size=config.batch_size)
@@ -23,22 +25,29 @@ class DDPGAgent(BaseAgent):
     
     def sample(self):
         observation = self.env.reset()
+        goal = observation['desired_goal']
         state = observation['observation']
         self.reset_noise()
-        i = 1
+        i = 0
+        totalreward = []
         while True :
             self.env.render()
-            action = self.network.forward_actor(state)
+            action = self.network.forward_actor(state, goal)
             if self.config.add_noise :
                 action = action #+ to_tensor(self.noise.sample())
-            next_observation, reward, done, _ = self.env.step(to_numpy(action))
+            print('recieving', self.env.step(to_numpy(action)))
+            next_observation, reward, done, is_success = self.env.step(to_numpy(action))
             next_state = next_observation['observation']
-            self.memory.add(state, action, reward, next_state, done)
+            desired_goal = next_observation['desired_goal']
+            
+            totalreward.append(reward)
+            self.memory.add(state, action, reward, next_state, done, goal)
             i += 1
             if done :
                 break
             if i > self.config.max_steps :
                 break
+        print('Cummulative reward : {}, number of Steps : {}'.format(sum(totalreward), i))
 
     def step(self):
         if len(self.memory) > self.config.batch_size * 5 :
