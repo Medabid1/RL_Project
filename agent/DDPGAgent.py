@@ -56,17 +56,17 @@ class DDPGAgent(BaseAgent):
                 self.update(experiences)
 
     def update(self, experiences):
-        states, actions, rewards, next_states, dones = experiences
+        states, actions, rewards, next_states, dones, goals = experiences
         #====== Value loss ========
         value_criterion = nn.MSELoss()
-        next_actions = self.target_network.forward_actor(next_states)
-        target_value = self.target_network.forward_critic(next_states, next_actions)
+        next_actions = self.target_network.forward_actor(next_states, goals)
+        target_value = self.target_network.forward_critic(next_states, next_actions, goals)
         expected_value = rewards + self.config.discount * target_value * dones
-        value = self.network.forward_critic(states, actions)
+        value = self.network.forward_critic(states, actions, goals)
         value_loss = value_criterion(expected_value, value)
         #====== Policy loss =======
-        actions_ = self.network.forward_actor(states)
-        policy_loss = -(self.network.forward_critic(states, actions_)).mean()
+        actions_ = self.network.forward_actor(states, goals)
+        policy_loss = -(self.network.forward_critic(states, actions_, goals)).mean()
             
         #====== Policy update =======
         self.actor_optimizer.zero_grad()
