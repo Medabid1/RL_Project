@@ -16,8 +16,7 @@ class ReplayBuffer():
         self.experience = namedtuple('Experience', field_names= 
                                     ['obs', 'action', 'reward', 'next_state', 'done', 'goal'])
 
-    def add(self, obs, action, reward, next_state, done, goal):
-        
+    def add(self, obs, action, reward, next_state, done, goal, achieved_goal):
         e = self.experience(obs, action.detach().numpy(), reward, next_state, done, goal)
         self.memory.append(e)
 

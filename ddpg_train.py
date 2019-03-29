@@ -6,7 +6,7 @@ from configs.config import Config
 from agent.DDPGAgent import DDPGAgent
 
 def main():
-    env = gym.make('FetchPickAndPlace-v1')
+    env = gym.make('FetchSlide-v1')
     env.render()
     config = Config()
     config.hidden_layers = [200,100]

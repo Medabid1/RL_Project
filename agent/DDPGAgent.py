@@ -35,11 +35,11 @@ class DDPGAgent(BaseAgent):
             action = self.network.forward_actor(state, goal)
             if self.config.add_noise :
                 action = action #+ to_tensor(self.noise.sample())
-            print('recieving', self.env.step(to_numpy(action)))
-            next_observation, reward, done, is_success = self.env.step(to_numpy(action))
+            #print('recieving', self.env.step(to_numpy(action)))
+            next_observation, reward, done, _ = self.env.step(to_numpy(action))
             next_state = next_observation['observation']
             desired_goal = next_observation['desired_goal']
-            
+            achieved_goal = next_observation['achieved_goal']
             totalreward.append(reward)
             self.memory.add(state, action, reward, next_state, done, goal)
             i += 1
