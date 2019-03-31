@@ -24,7 +24,9 @@ class Config:
         self.tau_ddpg = 0.001
         self.add_noise = True 
         self.max_steps = 500
-        self.use_her = False
+        self.replay_k = 4
+        self.replay_strategy = 'future'
+        self.n_epochs = 1000
         
     def add_argument(self, *args, **kwargs):
         self.parser.add_argument(*args, **kwargs)
