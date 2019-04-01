@@ -4,7 +4,7 @@ import numpy as np
 
 from configs.config import Config
 from agent.DDPGAgent import DDPGAgent
-
+from utils.utils import get_env_params
 def main():
     env = gym.make('FetchSlide-v1')
     env.render()
@@ -16,12 +16,7 @@ def main():
     config.max_steps = env.spec.timestep_limit
     config.use_her = True
     
-    observation = env.reset()
-    print(observation)
-    obs_size = np.shape(observation['observation'])[0]
-    action_size = np.shape(env.action_space)[0]
-    goal_size = np.shape(observation['desired_goal'])[0]
-    print(obs_size, action_size)
+    env_params = get_env_params(env)
     agent = DDPGAgent(config, obs_size, action_size, goal_size, env)
     
     for i in range(10000):

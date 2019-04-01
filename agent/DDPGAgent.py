@@ -27,34 +27,50 @@ class DDPGAgent(BaseAgent):
         self.env = env
     
     def sample(self):
-        observation = self.env.reset()
-        goal = observation['desired_goal']
-        state = observation['observation']
-        self.reset_noise()
-        
+        obs_batch = []
+        action_batch = []
+        goals_batch = []
+        achieved_goals_batch = []
         for _ in range(self.config.nb_rollouts): 
-            total_reward = []
+            actions_episode = []
+            obs_episode = []
+            goals_episode = []
+            achieved_goals_episode = []
+            
+            obs = self.env.reset()
+            goal = obs['desired_goal']
+            state = obs['observation']
+            achieved_goal = obs['achieved_goal']
+            self.reset_noise()
+            i = 0
             while True :
-                self.env.render()
-                action = self.network.forward_actor(state, goal)
-                if self.config.add_noise :
-                    action = action #+ to_tensor(self.noise.sample())
+                #self.env.render()
+                with torch.no_grad() : 
+                    action = self.network.forward_actor(state, goal)
+                    if self.config.add_noise :
+                        action = action + to_tensor(self.noise.sample())
                 #print('recieving', self.env.step(to_numpy(action)))
-                next_observation, reward, done, _ = self.env.step(to_numpy(action))
-                next_state = next_observation['observation']
-                desired_goal = next_observation['desired_goal']
-                achieved_goal = next_observation['achieved_goal']
-                total_reward.append(reward)
-                self.memory.add(state, action, reward, next_state, done, goal)
+                obs, _, _, info = self.env.step(to_numpy(action))
+                actions_episode.append(action)
+                obs_episode.append(state)
+                goals_episode.append(goal)
+                achieved_goals_episode.append(achieved_goal)
+            
+                state = obs['observation']
+                achieved_goal = obs['achieved_goal']
                 i += 1
-                if done :
+                if i >= self.env_params['max_timesteps'] :
                     break
-                if i > self.config.max_steps :
-                    break
-            print('Cummulative reward : {}, number of Steps : {}'.format(sum(total_reward), i))
+            
+            obs_batch.append(obs_episode)
+            action_batch.append(actions_episode)
+            achieved_goals_batch.append(achieved_goals_episode)
+            goals_batch.append(goals_episode)
+
+        self.replay_buffer.store_episode([obs_batch,action_batch,achieved_goals_batch,goals_batch])
 
     def step(self):
-        if len(self.replay_buffer) > self.config.batch_size * 5 :
+        for epoch in range(self.config.n_epochs): 
             for _ in range(5) :
                 experiences = self.replay_buffer.sample(self.config.batch_size)
                 self.update(experiences)

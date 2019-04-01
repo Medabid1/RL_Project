@@ -26,7 +26,8 @@ class Config:
         self.max_steps = 500
         self.replay_k = 4
         self.replay_strategy = 'future'
-        self.n_epochs = 1000
+        self.n_epochs = 512
+        self.nb_rollouts = 64
         
     def add_argument(self, *args, **kwargs):
         self.parser.add_argument(*args, **kwargs)
