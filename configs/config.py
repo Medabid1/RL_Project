@@ -28,6 +28,8 @@ class Config:
         self.replay_strategy = 'future'
         self.n_epochs = 50
         self.nb_rollouts = 50
-        
+        self.test_rollouts = 5
+        self.clip_return = None 
+
     def add_argument(self, *args, **kwargs):
         self.parser.add_argument(*args, **kwargs)
