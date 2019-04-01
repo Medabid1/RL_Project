@@ -9,24 +9,45 @@ from utils.utils import to_tensor, to_numpy
 from utils.her import her_sampler
 
 class DDPGAgent(BaseAgent):
-    def __init__(self, config, state_size, action_size, goal_size, env, env_params, her): 
+    def __init__(self, config, env, env_params, her): 
         BaseAgent.__init__(self, config)
         self.config = config
         self.her = her_sampler(config.replay_strategy, config.replay_k, env.compute_reward)
         self.env_params = env_params
-        self.network = ActorCriticDeterministic(state_size, action_size, goal_size,
-                                                config.hidden_layers, use_her=config.use_her)
-        self.target_network = ActorCriticDeterministic(state_size, action_size, goal_size,
-                                                    config.hidden_layers, use_her=config.use_her)
+        
+        self.network = ActorCriticDeterministic(env_params['obs'], env_params['action'],
+                                                env_params['goal'],
+                                                config.hidden_layers,
+                                                 use_her=config.use_her)
+        
+        self.target_network = ActorCriticDeterministic(env_params['obs'], env_params['action'],
+                                                       env_params['goal'], 
+                                                       config.hidden_layers, 
+                                                       use_her=config.use_her)
+
         self.target_network.load_state_dict(self.network.state_dict())
-        self.replay_buffer = ReplayBuffer(env_params, buffer_size=int(config.buffer_size),
-                                   sample_func=self.her.sample_her_transitions)
+        
+        self.replay_buffer = ReplayBuffer(env_params, 
+                                          buffer_size=int(config.buffer_size),
+                                          sample_func=self.her.sample_her_transitions)
+
         self.actor_optimizer = torch.optim.Adam(self.network.actor.parameters())
         self.critic_optimizer = torch.optim.Adam(self.network.critic.parameters())
-        self.noise = OrnsteinUhlenbeckProcess(action_size, seed=445684)
+        self.noise = OrnsteinUhlenbeckProcess(env_params['action'], seed=445684)
         self.env = env
     
-    def sample(self):
+    def learn(self):
+        for epoch in range(self.config.n_epochs):
+            self._sample()
+            for  _ in range(self.config.batch_size):
+                self._update()
+            self._soft_update()
+
+            if epoch % 10 == 0 :
+                self._eval_agent()
+                
+
+    def _sample(self):
         obs_batch = []
         action_batch = []
         goals_batch = []
@@ -36,7 +57,6 @@ class DDPGAgent(BaseAgent):
             obs_episode = []
             goals_episode = []
             achieved_goals_episode = []
-            
             obs = self.env.reset()
             goal = obs['desired_goal']
             state = obs['observation']
@@ -67,22 +87,30 @@ class DDPGAgent(BaseAgent):
             achieved_goals_batch.append(achieved_goals_episode)
             goals_batch.append(goals_episode)
 
-        self.replay_buffer.store_episode([obs_batch,action_batch,achieved_goals_batch,goals_batch])
+        self.replay_buffer.store_episode([obs_batch, 
+                                          action_batch, 
+                                          achieved_goals_batch,
+                                          goals_batch])
 
-    def step(self):
-        for epoch in range(self.config.n_epochs): 
-            for _ in range(5) :
-                experiences = self.replay_buffer.sample(self.config.batch_size)
-                self.update(experiences)
-
-    def update(self, experiences):
-        states, actions, rewards, next_states, dones, goals = experiences
+    
+    def _update(self):
+        experiences = self.replay_buffer.sample(self.config.batch_size)
+        states = experiences['obs']
+        actions = experiences['actions']
+        next_states = experiences['next_obs']
+        rewards = experiences['r']
+        goals = experiences['g']
+        next_goals = experiences['next_g']
+        actions, rewards, next_states, dones, goals = experiences
         #====== Value loss ========
         value_criterion = nn.MSELoss()
-        next_actions = self.target_network.forward_actor(next_states, goals)
-        target_value = self.target_network.forward_critic(next_states, next_actions, goals)
-        expected_value = rewards + self.config.discount * target_value * dones
+        next_actions = self.target_network.forward_actor(next_states, next_goals)
+        target_value = self.target_network.forward_critic(next_states, next_actions, next_goals)
+        expected_value = (rewards + self.config.discount * target_value * dones).detach()
+        clip_return = 1 / (1 - self.config.discount)
+        expected_value = torch.clamp(expected_value, -clip_return, 0)
         value = self.network.forward_critic(states, actions, goals)
+        
         value_loss = value_criterion(expected_value, value)
         #====== Policy loss =======
         actions_ = self.network.forward_actor(states, goals)
@@ -96,21 +124,17 @@ class DDPGAgent(BaseAgent):
         self.critic_optimizer.zero_grad()
         value_loss.backward()
         self.critic_optimizer.step()
-        #====== Soft update =========
-        self.soft_update()
+        
+        
 
     def reset_noise(self):
         self.noise.reset()
 
-    def soft_update(self):
+    def _soft_update(self):
         tau = self.config.tau_ddpg
         for targetp, netp in zip(self.target_network.parameters(), self.network.parameters()):
             targetp.data.copy_(tau * netp + (1 - tau) * targetp)
 
-    def learn(self):
-        #TODO learn everything here and evaluate it
-        pass
-    
     def _eval_agent(self):
         #TODO do after each epoch, an evaluation and render here to win some time
         pass

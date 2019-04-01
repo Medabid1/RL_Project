@@ -29,15 +29,15 @@ class ReplayBuffer:
     
     # store the episode
     def store_episode(self, episode_batch):
-        mb_obs, mb_ag, mb_g, mb_actions = episode_batch
-        batch_size = mb_obs.shape[0]
+        obs_batch, achievedg_batch, goal_batch, actions_batch = episode_batch
+        batch_size = obs_batch.shape[0]
         #with self.lock:
         idxs = self._get_storage_idx(inc=batch_size)
         # store the informations
-        self.buffers['obs'][idxs] = mb_obs
-        self.buffers['ag'][idxs] = mb_ag
-        self.buffers['g'][idxs] = mb_g
-        self.buffers['actions'][idxs] = mb_actions
+        self.buffers['obs'][idxs] = obs_batch
+        self.buffers['ag'][idxs] = achievedg_batch
+        self.buffers['g'][idxs] = goal_batch
+        self.buffers['actions'][idxs] = actions_batch
         self.n_transitions_stored += self.T * batch_size
 
     # sample the data from the replay buffer
@@ -46,8 +46,8 @@ class ReplayBuffer:
         #with self.lock:
         for key in self.buffers.keys():
             temp_buffers[key] = self.buffers[key][:self.current_size]
-        temp_buffers['obs_next'] = temp_buffers['obs'][:, 1:, :]
-        temp_buffers['ag_next'] = temp_buffers['ag'][:, 1:, :]
+        temp_buffers['next_obs'] = temp_buffers['obs'][:, 1:, :]
+        temp_buffers['next_ag'] = temp_buffers['ag'][:, 1:, :]
         # sample transitions
         transitions = self.sample_func(temp_buffers, batch_size)
         return transitions
