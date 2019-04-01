@@ -32,7 +32,7 @@ class DDPGAgent(BaseAgent):
         
         self.her = her_sampler(config.replay_strategy, config.replay_k, 
                                env.compute_reward)
-                               
+
         self.replay_buffer = ReplayBuffer(env_params, 
                                           buffer_size=int(config.buffer_size),
                                           sample_func=her.sample_her_transitions)
@@ -66,29 +66,30 @@ class DDPGAgent(BaseAgent):
             obs_episode = []
             goals_episode = []
             achieved_goals_episode = []
-            obs = self.env.reset()
-            goal = obs['desired_goal']
-            state = obs['observation']
-            achieved_goal = obs['achieved_goal']
+            observation = self.env.reset()
+            goal = observation['desired_goal']
+            obs = observation['observation']
+            achieved_goal = observation['achieved_goal']
             self._reset_noise()
             i = 0
             while True :
                 #self.env.render()
                 with torch.no_grad() : 
-                    action = self.network.forward_actor(state, goal)
+                    action = self.network.forward_actor(obs, goal)
                     if self.config.add_noise :
                         action = action + to_tensor(self.noise.sample())
+                    action = to_numpy(action)
                 #print('recieving', self.env.step(to_numpy(action)))
-                obs, _, _, info = self.env.step(to_numpy(action))
-                actions_episode.append(action)
-                obs_episode.append(state)
-                goals_episode.append(goal)
-                achieved_goals_episode.append(achieved_goal)
+                new_obs, _, _, info = self.env.step(action)
+                actions_episode.append(action.copy())
+                obs_episode.append(obs.copy())
+                goals_episode.append(goal.copy())
+                achieved_goals_episode.append(achieved_goal.copy())
             
-                state = obs['observation']
-                achieved_goal = obs['achieved_goal']
+                obs = new_obs['observation']
+                achieved_goal = new_obs['achieved_goal']
                 i += 1
-                if i >= self.env_params['max_timesteps'] :
+                if i > self.env_params['max_timesteps'] :
                     break
             
             obs_batch.append(obs_episode)
@@ -96,10 +97,10 @@ class DDPGAgent(BaseAgent):
             achieved_goals_batch.append(achieved_goals_episode)
             goals_batch.append(goals_episode)
 
-        self.replay_buffer.store_episode([obs_batch, 
-                                          action_batch, 
-                                          achieved_goals_batch,
-                                          goals_batch])
+        self.replay_buffer.store_episode([np.array(obs_batch), 
+                                          np.array(action_batch), 
+                                          np.array(achieved_goals_batch),
+                                          np.array(goals_batch)])
 
     
     def _update(self):
