@@ -101,14 +101,15 @@ class DDPGAgent(BaseAgent):
         rewards = experiences['r']
         goals = experiences['g']
         next_goals = experiences['next_g']
-        actions, rewards, next_states, dones, goals = experiences
         #====== Value loss ========
+        with torch.no_grad():
+            next_actions = self.target_network.forward_actor(next_states, next_goals)
+            target_value = self.target_network.forward_critic(next_states, next_actions, next_goals)
+            expected_value = (rewards + self.config.discount * target_value).detach()
+            clip_return = 1 / (1 - self.config.discount)
+            expected_value = torch.clamp(expected_value, -clip_return, 0)
+        
         value_criterion = nn.MSELoss()
-        next_actions = self.target_network.forward_actor(next_states, next_goals)
-        target_value = self.target_network.forward_critic(next_states, next_actions, next_goals)
-        expected_value = (rewards + self.config.discount * target_value * dones).detach()
-        clip_return = 1 / (1 - self.config.discount)
-        expected_value = torch.clamp(expected_value, -clip_return, 0)
         value = self.network.forward_critic(states, actions, goals)
         
         value_loss = value_criterion(expected_value, value)
