@@ -9,6 +9,7 @@ from utils.her import her_sampler
 
 def main():
     env = gym.make('FetchSlide-v1')
+    #env.render()
     config = Config()
     config.hidden_layers = [256, 256]
     config.discount = 0.99
@@ -16,6 +17,7 @@ def main():
     config.use_her = True
     config.max_steps = env.spec.timestep_limit
     env_params = get_env_params(env)
+    print(env_params)
     agent = DDPGAgent(config, env, env_params, her_sampler)
     agent.learn()
     #print('returns', returns)

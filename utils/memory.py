@@ -35,8 +35,8 @@ class ReplayBuffer:
         idxs = self._get_storage_idx(inc=batch_size)
         # store the informations
         self.buffers['obs'][idxs] = obs_batch
-        self.buffers['ag'][idxs] = achievedg_batch
         self.buffers['g'][idxs] = goal_batch
+        self.buffers['ag'][idxs] = achievedg_batch
         self.buffers['actions'][idxs] = actions_batch
         self.n_transitions_stored += self.T * batch_size
 

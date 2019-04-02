@@ -14,7 +14,7 @@ class Config:
         self.gae_tau = 0.95
         self.num_workers = None
         self.tau = 0.001
-        self.batch_size = 40
+        self.batch_size = 5
         self.buffer_size = 1e6
         self.optimization_rollouts = None
         self.hidden_layers = [256,256]
@@ -26,8 +26,8 @@ class Config:
         self.max_steps = 500
         self.replay_k = 4
         self.replay_strategy = 'future'
-        self.n_epochs = 50
-        self.nb_rollouts = 50
+        self.n_epochs = 10
+        self.nb_rollouts = 10
         self.test_rollouts = 5
         self.clip_return = None 
         self.use_her = False

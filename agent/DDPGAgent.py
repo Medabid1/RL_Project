@@ -35,7 +35,7 @@ class DDPGAgent(BaseAgent):
 
         self.replay_buffer = ReplayBuffer(env_params, 
                                           buffer_size=int(config.buffer_size),
-                                          sample_func=her.sample_her_transitions)
+                                          sample_func=self.her.sample_her_transitions)
 
         self.actor_optimizer = torch.optim.Adam(self.network.actor.parameters())
         self.critic_optimizer = torch.optim.Adam(self.network.critic.parameters())
@@ -57,6 +57,7 @@ class DDPGAgent(BaseAgent):
                 
 
     def _sample(self):
+       
         obs_batch = []
         action_batch = []
         goals_batch = []
@@ -73,24 +74,27 @@ class DDPGAgent(BaseAgent):
             self._reset_noise()
             i = 0
             while True :
-                #self.env.render()
+                self.env.render()
                 with torch.no_grad() : 
                     action = self.network.forward_actor(obs, goal)
                     if self.config.add_noise :
                         action = action + to_tensor(self.noise.sample())
                     action = to_numpy(action)
                 #print('recieving', self.env.step(to_numpy(action)))
+                print('action',action)
+                print("obs",obs)
                 new_obs, _, _, info = self.env.step(action)
-                actions_episode.append(action.copy())
-                obs_episode.append(obs.copy())
-                goals_episode.append(goal.copy())
-                achieved_goals_episode.append(achieved_goal.copy())
-            
-                obs = new_obs['observation']
                 achieved_goal = new_obs['achieved_goal']
+                obs_episode.append(obs.copy())
+                obs = new_obs['observation']
+                achieved_goals_episode.append(achieved_goal.copy())
                 i += 1
                 if i > self.env_params['max_timesteps'] :
                     break
+                actions_episode.append(action.copy())
+                goals_episode.append(goal.copy())
+            
+                
             
             obs_batch.append(obs_episode)
             action_batch.append(actions_episode)
@@ -98,9 +102,9 @@ class DDPGAgent(BaseAgent):
             goals_batch.append(goals_episode)
 
         self.replay_buffer.store_episode([np.array(obs_batch), 
-                                          np.array(action_batch), 
-                                          np.array(achieved_goals_batch),
-                                          np.array(goals_batch)])
+                                          np.array(achieved_goals_batch), 
+                                          np.array(goals_batch),
+                                          np.array(action_batch)])
 
     
     def _update(self):
@@ -110,11 +114,11 @@ class DDPGAgent(BaseAgent):
         next_states = experiences['next_obs']
         rewards = experiences['r']
         goals = experiences['g']
-        next_goals = experiences['next_g']
+        next_goals = goals.copy()
         with torch.no_grad():
             next_actions = self.target_network.forward_actor(next_states, next_goals)
             target_value = self.target_network.forward_critic(next_states, next_actions, next_goals)
-            expected_value = (rewards + self.config.discount * target_value).detach()
+            expected_value = (to_tensor(rewards) + self.config.discount * target_value).detach()
             
             clip_return = 1 / (1 - self.config.discount)
             expected_value = torch.clamp(expected_value, -clip_return, self.config.clip_return or 0 )
