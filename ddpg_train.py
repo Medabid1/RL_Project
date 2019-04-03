@@ -8,7 +8,7 @@ from utils.utils import get_env_params
 from utils.her import her_sampler
 
 def main():
-    env = gym.make('FetchSlide-v1')
+    env = gym.make('FetchReach-v1')
     #env.render()
     config = Config()
     config.hidden_layers = [256, 256]

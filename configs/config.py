@@ -5,7 +5,7 @@ class Config:
     
     def __init__(self):
         self.parser= argparse.ArgumentParser()
-        self.discount = 0.99
+        self.discount = 0.995
         self.actor_layers = None
         self.critic_layers = None 
         self.rollout_length = 1000
@@ -14,7 +14,8 @@ class Config:
         self.gae_tau = 0.95
         self.num_workers = None
         self.tau = 0.001
-        self.batch_size = 5
+        self.batch_size = 256
+        self.n_batches = 40
         self.buffer_size = 1e6
         self.optimization_rollouts = None
         self.hidden_layers = [256,256]
@@ -26,10 +27,14 @@ class Config:
         self.max_steps = 500
         self.replay_k = 4
         self.replay_strategy = 'future'
-        self.n_epochs = 10
-        self.nb_rollouts = 10
-        self.test_rollouts = 5
+        self.n_epochs = 100
+        self.nb_rollouts = 100
+        self.test_rollouts = 10
         self.clip_return = None 
         self.use_her = False
+        self.action_l2 = 0.5
+        self.clip_obs = 200
+        self.clip_range = 5
+    
     def add_argument(self, *args, **kwargs):
         self.parser.add_argument(*args, **kwargs)
