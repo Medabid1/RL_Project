@@ -53,83 +53,88 @@ class DDPGAgent(BaseAgent):
         self.g_norm = normalizer(size=env_params['goal'], default_clip_range=self.config.clip_range)
     
     def learn(self):
-        for epoch in range(self.config.n_epochs):
-            print('sampling')
-            self._sample()
-            print('updating')
-            for  _ in range(self.config.n_batches):
-                self._update()
-            print('soft update')
-            self._soft_update()
+        for epoch in range(1,self.config.n_epochs+1):
+            for _ in range(self.config.n_cycles):
+                for _ in range(2):
+                    episode = self._sample()
+                    self.replay_buffer.store_episode(episode)
+                    self._update_normalizer(episode)
+                for  _ in range(self.config.n_batches):
+                    self._update()
+            
+                self._soft_update()
 
-            if epoch % 10 == 0 :
-                success_rate = self._eval_agent()
-                print('Success rate in after {} epochs is {} over {} test runs'.format(epoch, 
+            
+            success_rate = self._eval_agent()
+            print('Success rate in after {} epochs is {} over {} test runs'.format(epoch, 
                                                                                     success_rate,
                                                                                     self.config.test_rollouts))
 
                 
 
     def _sample(self):
-       
         obs_batch = []
         action_batch = []
-        goals_batch = []
         achieved_goals_batch = []
-        for _ in range(self.config.nb_rollouts): 
-            actions_episode = []
-            obs_episode = []
-            goals_episode = []
-            achieved_goals_episode = []
-            observation = self.env.reset()
-            goal = observation['desired_goal']
-            obs = observation['observation']
-            achieved_goal = observation['achieved_goal']
-            self._reset_noise()
-            i = 0
-            while True :
-                self.env.render()
-                with torch.no_grad() : 
-                    action = self.actor(obs, goal)
+        goals_batch = []
+        actions_episode = []
+        obs_episode = []
+        goals_episode = []
+        achieved_goals_episode = []
+        observation = self.env.reset()
+        goal = observation['desired_goal']
+        obs = observation['observation']
+        achieved_goal = observation['achieved_goal']
+        
+        i = 0
+        while True :
+            self.env.render()
+            with torch.no_grad() : 
+                action = self.actor(obs, goal)
+                
+                if self.config.add_noise :
+                    action = self._select_actions(action)
                     
-                    if self.config.add_noise :
-                        action = self._select_actions(action)
-                        
-                new_obs, _, _, info = self.env.step(action)
-                
-                achieved_goal = new_obs['achieved_goal']
-                obs_episode.append(obs.copy())
-                obs = new_obs['observation']
-                
-                achieved_goals_episode.append(achieved_goal.copy())
-                i += 1
-                if i > self.env_params['max_timesteps'] :
-                    break
-                actions_episode.append(action.copy())
-                goals_episode.append(goal.copy())
+            new_obs, _, _, info = self.env.step(action)
             
-                
+            achieved_goal = new_obs['achieved_goal']
+            obs_episode.append(obs.copy())
+            obs = new_obs['observation']
             
-            obs_batch.append(obs_episode)
-            action_batch.append(actions_episode)
-            achieved_goals_batch.append(achieved_goals_episode)
-            goals_batch.append(goals_episode)
+            achieved_goals_episode.append(achieved_goal.copy())
+            i += 1
+            if i > self.env_params['max_timesteps'] :
+                break
+            actions_episode.append(action.copy())
+            goals_episode.append(goal.copy())
+        
+            
+        
+        obs_batch.append(obs_episode)
+        action_batch.append(actions_episode)
+        achieved_goals_batch.append(achieved_goals_episode)
+        goals_batch.append(goals_episode)
+        
+        episode = [np.array(obs_batch), np.array(achieved_goals_batch), np.array(goals_batch),
+                                          np.array(action_batch)]
+        
+        # self.replay_buffer.store_episode([np.array(obs_batch), 
+        #                                   np.array(achieved_goals_batch), 
+        #                                   np.array(goals_batch),
+        #                                   np.array(action_batch)])
+        # self._update_normalizer([np.array(obs_batch), 
+        #                                   np.array(achieved_goals_batch), 
+        #                                   np.array(goals_batch),
+        #                                   np.array(action_batch)])
+        return episode
 
-        self.replay_buffer.store_episode([np.array(obs_batch), 
-                                          np.array(achieved_goals_batch), 
-                                          np.array(goals_batch),
-                                          np.array(action_batch)])
-        self._update_normalizer([np.array(obs_batch), 
-                                          np.array(achieved_goals_batch), 
-                                          np.array(goals_batch),
-                                          np.array(action_batch)])
-    
     def _update(self):
         experiences = self.replay_buffer.sample(self.config.batch_size)
         states = experiences['obs']
         actions = experiences['actions']
         next_states = experiences['next_obs']
         rewards = experiences['r']
+        
         goals = experiences['g']
         next_goals = goals.copy()
         states = self.o_norm.normalize(states)
@@ -179,13 +184,14 @@ class DDPGAgent(BaseAgent):
         total_success = []
         for _ in range(self.config.test_rollouts):
             local_success = []
-            self.env.render()
             observation = self.env.reset()
+            
             obs = observation['observation']
             goal = observation['desired_goal']
             obs = self.o_norm.normalize(obs)
             goal = self.g_norm.normalize(goal)
             for _ in range(self.env_params['max_timesteps']):
+                self.env.render()
                 with torch.no_grad():
                     action = self.actor(obs, goal)
                 new_observation, _, _, info = self.env.step(to_numpy(action))
