@@ -27,8 +27,8 @@ class Config:
         self.max_steps = 500
         self.replay_k = 4
         self.replay_strategy = 'future'
-        self.n_epochs = 50
-        self.nb_rollouts = 100
+        self.n_epochs = 200
+        self.nb_rollouts = 16
         self.test_rollouts = 10
         self.clip_return = None 
         self.use_her = False
@@ -36,5 +36,7 @@ class Config:
         self.clip_obs = 200
         self.clip_range = 5
         self.n_cycles = 50
+        self.render = False
+
     def add_argument(self, *args, **kwargs):
         self.parser.add_argument(*args, **kwargs)

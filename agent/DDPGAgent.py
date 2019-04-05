@@ -6,7 +6,6 @@ from .BaseAgent import BaseAgent
 from utils.her import her_sampler
 from utils.memory import ReplayBuffer 
 from utils.utils import to_tensor, to_numpy
-from utils.noise import OrnsteinUhlenbeckProcess
 from network.Networks import actor, critic
 from utils.normalizers import normalizer
 
@@ -47,7 +46,6 @@ class DDPGAgent(BaseAgent):
 
         self.actor_optimizer = torch.optim.Adam(self.actor.parameters())
         self.critic_optimizer = torch.optim.Adam(self.critic.parameters())
-        self.noise = OrnsteinUhlenbeckProcess(env_params['action'], seed=445684)
 
         self.o_norm = normalizer(size=env_params['obs'], default_clip_range=self.config.clip_range)
         self.g_norm = normalizer(size=env_params['goal'], default_clip_range=self.config.clip_range)
@@ -66,7 +64,7 @@ class DDPGAgent(BaseAgent):
 
             
             success_rate = self._eval_agent()
-            print('Success rate in after {} epochs is {} over {} test runs'.format(epoch, 
+            print('Success rate in after {} epochs is {:.3f} over {} test runs'.format(epoch, 
                                                                                     success_rate,
                                                                                     self.config.test_rollouts))
 
@@ -88,12 +86,13 @@ class DDPGAgent(BaseAgent):
         
         i = 0
         while True :
-            self.env.render()
+            if self.config.render :
+                    self.env.render()
             with torch.no_grad() : 
                 action = self.actor(obs, goal)
                 
                 if self.config.add_noise :
-                    action = self._select_actions(action)
+                    action = self._select_actions(action[0])
                     
             new_obs, _, _, info = self.env.step(action)
             
@@ -130,13 +129,11 @@ class DDPGAgent(BaseAgent):
 
     def _update(self):
         experiences = self.replay_buffer.sample(self.config.batch_size)
-        states = experiences['obs']
+        states, goals = self._preproc_og(experiences['obs'], experiences['g'])
+        next_states, next_goals = self._preproc_og(experiences['next_obs'], experiences['g'])
         actions = experiences['actions']
-        next_states = experiences['next_obs']
         rewards = experiences['r']
         
-        goals = experiences['g']
-        next_goals = goals.copy()
         states = self.o_norm.normalize(states)
         goals = self.g_norm.normalize(goals)
         next_states = self.o_norm.normalize(next_states)
@@ -144,7 +141,7 @@ class DDPGAgent(BaseAgent):
         
         with torch.no_grad():
             next_actions = self.target_actor(next_states, next_goals)
-            target_value = self.target_critic(next_states, next_actions, next_goals)
+            target_value = self.target_critic(next_states, next_actions[0], next_goals)
             expected_value = (to_tensor(rewards) + self.config.discount * target_value).detach()
             
             clip_return = 1 / (1 - self.config.discount)
@@ -156,8 +153,8 @@ class DDPGAgent(BaseAgent):
         value_loss = value_criterion(expected_value, value)
         #====== Policy loss =======
         actions_ = self.actor(states, goals)
-        policy_loss = -(self.critic(states, actions_, goals)).mean()    
-        policy_loss += self.config.action_l2 * (actions_).pow(2).mean()
+        policy_loss = -(self.critic(states, actions_[0], goals)).mean()    
+        policy_loss += self.config.action_l2 * (actions_[1]).pow(2).mean()
         #====== Policy update =======
         self.actor_optimizer.zero_grad()
         policy_loss.backward()
@@ -169,8 +166,6 @@ class DDPGAgent(BaseAgent):
         
         
 
-    def _reset_noise(self):
-        self.noise.reset()
 
     def _soft_update(self):
         tau = self.config.tau_ddpg
@@ -181,41 +176,37 @@ class DDPGAgent(BaseAgent):
             targetp.data.copy_(tau * netp + (1 - tau) * targetp)
 
     def _eval_agent(self):
-        total_success = []
+        success_rate = 0
         for _ in range(self.config.test_rollouts):
-            local_success = []
+            
             observation = self.env.reset()
             
             obs = observation['observation']
             goal = observation['desired_goal']
-            obs = self.o_norm.normalize(obs)
-            goal = self.g_norm.normalize(goal)
+            obs , goal = self._preproc_inputs(obs, goal)
             for _ in range(self.env_params['max_timesteps']):
-                self.env.render()
+                if self.config.render :
+                    self.env.render()
                 with torch.no_grad():
                     action = self.actor(obs, goal)
-                new_observation, _, _, info = self.env.step(to_numpy(action))
-                obs = self.o_norm.normalize(new_observation['observation'])
-                goal = self.g_norm.normalize(new_observation['desired_goal'])
-
-                local_success.append(info['is_success'])
+                new_obs, _, _, info = self.env.step(to_numpy(action[0]))
+                obs, goal = self._preproc_inputs(new_obs['observation'], new_obs['desired_goal'])
+            success_rate += info['is_success']  
+                
             
-            total_success.append(local_success)
-        
-        total_success = np.array(total_success)
-        
-        return np.mean(total_success)
+        return success_rate/self.config.test_rollouts
 
     def _select_actions(self, pi):
         action = pi.cpu().numpy().squeeze()
         # add the gaussian
+        
         action += 0.2 * self.env_params['action_max'] * np.random.randn(*action.shape)
         action = np.clip(action, -self.env_params['action_max'], self.env_params['action_max'])
         # random actions...
-        #random_actions = np.random.uniform(low=-self.env_params['action_max'], high=self.env_params['action_max'], \
-        #                                    size=self.env_params['action'])
+        random_actions = np.random.uniform(low=-self.env_params['action_max'], high=self.env_params['action_max'], \
+                                            size=self.env_params['action'])
         # choose if use the random actions
-        #action += np.random.binomial(1, 0.3, 1)[0] * (random_actions - action)
+        action += np.random.binomial(1, 0.3, 1)[0] * (random_actions - action)
         return action
 
     def _update_normalizer(self, episode_batch):

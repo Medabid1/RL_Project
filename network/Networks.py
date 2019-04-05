@@ -99,10 +99,10 @@ class actor(nn.Module):
     def __init__(self, env_params):
         super(actor, self).__init__()
         self.max_action = env_params['action_max']
-        self.fc1 = nn.Linear(env_params['obs'] + env_params['goal'], 256)
-        self.fc2 = nn.Linear(256, 256)
-        self.fc3 = nn.Linear(256, 256)
-        self.action_out = nn.Linear(256, env_params['action'])
+        self.fc1 = nn.Linear(env_params['obs'] + env_params['goal'], 64)
+        self.fc2 = nn.Linear(64, 64)
+        self.fc3 = nn.Linear(64, 64)
+        self.action_out = nn.Linear(64, env_params['action'])
 
     def forward(self, x, goal):
         if not isinstance(x, torch.Tensor) :
@@ -113,18 +113,19 @@ class actor(nn.Module):
         x = F.relu(self.fc1(x))
         x = F.relu(self.fc2(x))
         x = F.relu(self.fc3(x))
-        actions = self.max_action * torch.tanh(self.action_out(x))
+        x = self.action_out(x)
+        actions = self.max_action * torch.tanh(x)
 
-        return actions
+        return (actions, x) 
 
 class critic(nn.Module):
     def __init__(self, env_params):
         super(critic, self).__init__()
         self.max_action = env_params['action_max']
-        self.fc1 = nn.Linear(env_params['obs'] + env_params['goal'] + env_params['action'], 256)
-        self.fc2 = nn.Linear(256, 256)
-        self.fc3 = nn.Linear(256, 256)
-        self.q_out = nn.Linear(256, 1)
+        self.fc1 = nn.Linear(env_params['obs'] + env_params['goal'] + env_params['action'], 64)
+        self.fc2 = nn.Linear(64, 64)
+        self.fc3 = nn.Linear(64, 64)
+        self.q_out = nn.Linear(64, 1)
 
     def forward(self, x, actions, goals):
         if not isinstance(x, torch.Tensor) :

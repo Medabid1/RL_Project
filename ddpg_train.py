@@ -8,13 +8,11 @@ from utils.utils import get_env_params
 from utils.her import her_sampler
 
 def main():
-    env = gym.make('FetchReach-v1')
+    env_names = ['FetchReach-v1', 'FetchPush-v1', 'FetchPickAndPlace-v1','FetchSlide-v1']
+    env = gym.make(env_names[1])
     #env.render()
     config = Config()
-    config.hidden_layers = [256, 256]
-    config.discount = 0.99
-    config.buffer_size = 1e6
-    config.use_her = True
+    config.render = False
     config.max_steps = env.spec.timestep_limit
     env_params = get_env_params(env)
     print(env_params)
