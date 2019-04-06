@@ -103,7 +103,7 @@ class actor(nn.Module):
         self.fc2 = nn.Linear(64, 64)
         self.fc3 = nn.Linear(64, 64)
         self.action_out = nn.Linear(64, env_params['action'])
-
+        self.apply(init_weights)
     def forward(self, x, goal):
         if not isinstance(x, torch.Tensor) :
             x = to_tensor(x)
@@ -116,7 +116,7 @@ class actor(nn.Module):
         x = self.action_out(x)
         actions = self.max_action * torch.tanh(x)
 
-        return (actions, x) 
+        return (actions,x) 
 
 class critic(nn.Module):
     def __init__(self, env_params):
@@ -126,7 +126,7 @@ class critic(nn.Module):
         self.fc2 = nn.Linear(64, 64)
         self.fc3 = nn.Linear(64, 64)
         self.q_out = nn.Linear(64, 1)
-
+        self.apply(init_weights)
     def forward(self, x, actions, goals):
         if not isinstance(x, torch.Tensor) :
             x = to_tensor(x)

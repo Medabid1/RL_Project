@@ -53,10 +53,10 @@ class DDPGAgent(BaseAgent):
     def learn(self):
         for epoch in range(1,self.config.n_epochs+1):
             for _ in range(self.config.n_cycles):
-                for _ in range(2):
-                    episode = self._sample()
-                    self.replay_buffer.store_episode(episode)
-                    self._update_normalizer(episode)
+                #for _ in range(2):
+                episode = self._sample(epoch)
+                self.replay_buffer.store_episode(episode)
+                self._update_normalizer(episode)
                 for  _ in range(self.config.n_batches):
                     self._update()
             
@@ -64,13 +64,14 @@ class DDPGAgent(BaseAgent):
 
             
             success_rate = self._eval_agent()
+            
             print('Success rate in after {} epochs is {:.3f} over {} test runs'.format(epoch, 
                                                                                     success_rate,
                                                                                     self.config.test_rollouts))
 
                 
 
-    def _sample(self):
+    def _sample(self, epoch):
         obs_batch = []
         action_batch = []
         achieved_goals_batch = []
@@ -92,7 +93,7 @@ class DDPGAgent(BaseAgent):
                 action = self.actor(obs, goal)
                 
                 if self.config.add_noise :
-                    action = self._select_actions(action[0])
+                    action = self._select_actions(action[0], 1/epoch)
                     
             new_obs, _, _, info = self.env.step(action)
             
@@ -154,7 +155,7 @@ class DDPGAgent(BaseAgent):
         #====== Policy loss =======
         actions_ = self.actor(states, goals)
         policy_loss = -(self.critic(states, actions_[0], goals)).mean()    
-        policy_loss += self.config.action_l2 * (actions_[1]).pow(2).mean()
+        policy_loss += self.config.action_l2 * (actions_[0]).pow(2).mean()
         #====== Policy update =======
         self.actor_optimizer.zero_grad()
         policy_loss.backward()
@@ -196,17 +197,18 @@ class DDPGAgent(BaseAgent):
             
         return success_rate/self.config.test_rollouts
 
-    def _select_actions(self, pi):
+    def _select_actions(self, pi, eps):
         action = pi.cpu().numpy().squeeze()
         # add the gaussian
-        
-        action += 0.2 * self.env_params['action_max'] * np.random.randn(*action.shape)
+            
+        action += self.config.eps * self.env_params['action_max'] * np.random.randn(*action.shape)
         action = np.clip(action, -self.env_params['action_max'], self.env_params['action_max'])
         # random actions...
+        
         random_actions = np.random.uniform(low=-self.env_params['action_max'], high=self.env_params['action_max'], \
                                             size=self.env_params['action'])
         # choose if use the random actions
-        action += np.random.binomial(1, 0.3, 1)[0] * (random_actions - action)
+        action += np.random.binomial(1,eps,1) * (random_actions - action)
         return action
 
     def _update_normalizer(self, episode_batch):

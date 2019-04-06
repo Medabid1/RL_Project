@@ -9,7 +9,7 @@ from utils.her import her_sampler
 
 def main():
     env_names = ['FetchReach-v1', 'FetchPush-v1', 'FetchPickAndPlace-v1','FetchSlide-v1']
-    env = gym.make(env_names[1])
+    env = gym.make(env_names[3])
     #env.render()
     config = Config()
     config.render = False
