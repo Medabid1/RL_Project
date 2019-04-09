@@ -49,7 +49,7 @@ class DDPGAgent(BaseAgent):
 
         self.o_norm = normalizer(size=env_params['obs'], default_clip_range=self.config.clip_range)
         self.g_norm = normalizer(size=env_params['goal'], default_clip_range=self.config.clip_range)
-    
+        self.model_path = '/home/mohamed/Desktop/Project/utils'
     def learn(self):
         for epoch in range(1,self.config.n_epochs+1):
             for _ in range(self.config.n_cycles):
@@ -68,7 +68,8 @@ class DDPGAgent(BaseAgent):
             print('Success rate in after {} epochs is {:.3f} over {} test runs'.format(epoch, 
                                                                                     success_rate,
                                                                                     self.config.test_rollouts))
-
+        torch.save([self.o_norm.mean, self.o_norm.std, self.g_norm.mean, self.g_norm.std, self.actor.state_dict()],
+                   self.model_path + '/model.pt')
                 
 
     def _sample(self, epoch):
