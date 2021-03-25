@@ -9,5 +9,5 @@ Hindsight Experience Replay for sparce reward RL environments
 
 
 ### Implemented and Tested Models :
-[x] DDPG https://arxiv.org/pdf/1509.02971.pdf
-[X] Hindsight Experience Replay https://arxiv.org/abs/1707.01495
+- [x] DDPG https://arxiv.org/pdf/1509.02971.pdf
+- [X] Hindsight Experience Replay https://arxiv.org/abs/1707.01495
