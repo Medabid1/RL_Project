@@ -5,4 +5,4 @@ Hindsight Experience Replay for sparce reward RL environments
 
 ## Poster :
 
-![poster]()
+![poster](https://github.com/Medabid1/RL_Project/blob/master/poster/Deep_Learning_Poster-1.png)
